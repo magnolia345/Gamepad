@@ -1,27 +1,27 @@
 #include <Adafruit_GFX.h>
 #include <MCUFRIEND_kbv.h>
 #include <TouchScreen.h>
-
 MCUFRIEND_kbv tft;
 int px;
 int py;
 // Shield pin configurations
 const int XP = 8, XM = A2, YP = A3, YM = 9; 
 TouchScreen ts = TouchScreen(XP, YP, XM, YM, 200);
-
+int logged =true;
+int done = true;
 // Use your custom calibration bounds here
 int TS_LEFT = 114, TS_RT = 915, TS_TOP = 911, TS_BOT = 69; 
 // Pressure thresholds
-#define MINPRESSURE 3
+#define MINPRESSURE 1
 #define MAXPRESSURE 300000083
 String passcode = "842842";
 String pass = ""; 
 
 
 // Brush Settings
-#define BRUSH_SIZE 3
+#define BRUSH_SIZE 5
 uint16_t current_color = 0xFFFF; // White brush
-
+bool run = true;
 // Variables to track continuous line drawing
 int last_x = -1;
 int last_y = -1;
@@ -38,7 +38,6 @@ bool collide = false;
 int color = WHITE;
 
 void setup() {
-
   Serial.begin(9600);
   tft.reset();
   uint16_t identifier = tft.readID();
@@ -57,38 +56,24 @@ void loop() {
   if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
     px = map(p.y, TS_BOT, TS_TOP, 0, tft.width());
     py = map(p.x, TS_RT, TS_LEFT, 0, tft.height());
-    int val = 6;
-    for(int x = 110; x <= 210; x += 50){
-      val -= 8;
-      int y = 45;
-      for(y = 45; y <= 145; y += 50){
-        val += 3;
-        if(circle(x, y, 15) && px < 230 && px > 90 && py > 25 && py < 165){
-          pass += String(val);
-          tft.setTextColor(WHITE, BLACK);
-          tft.setTextSize(2);
-          tft.setCursor(130, 10);
-          tft.print(pass);
-          delay(100);
-        }
-      }
-      delay(50);
+    if(logged){
+      check();
     }
-    if(pass == passcode){
-      tft.setCursor(85, 220);
-      tft.setTextSize(2);
-      tft.setTextColor(WHITE);
-      tft.print("Access Accepted");
-    }
+  if(!logged){
+    pad();
+  }
   }else{
     last_x = -1;
     last_y = -1;
   }
-  delay(10);
 }
 
 void cleardisplay() {
-  tft.fillScreen(0x0000); // Clear whole screen to black
+  tft.fillScreen(0x0000);
+  if(!done){
+    drawUI();
+  } // Clear whole screen to black
+
 }
 void drawUI() {
   // Draw canvas divider line
@@ -103,7 +88,6 @@ void drawUI() {
   tft.fillRect(245, 85, 70, 20, GREEN);
   tft.fillRect(245, 110, 70, 20, BLUE);
   tft.fillRect(245, 135, 70, 20, RED);
-  tft.fillRect(295, 220, 30, 10, WHITE);
 }
 bool collision(int x, int y, int w, int h){
   if(px > x -1 && px < x + w + 1 && py > y -1 && py < y + h + 1){
@@ -127,9 +111,7 @@ void draw(){
       if (last_x == -1 && last_y == -1) {
         tft.fillCircle(px, py, BRUSH_SIZE, color);
       } else {
-        tft.drawLine(last_x, last_y, px, py, color);
-        tft.drawLine(last_x + 0.1, last_y, px + 0.1, py, color);
-        tft.drawLine(last_x, last_y + 0.1, px, py + 0.1, color);
+        
       }
       
       last_x = px;
@@ -188,5 +170,58 @@ bool circle(int cx, int cy, int r){
     return false;
   }
 }
+void check(){
+      int val = 6;
+    for(int x = 110; x <= 210; x += 50){
+      val -= 8;
+      int y = 45;
+      for(y = 45; y <= 145; y += 50){
+        val += 3;
+        if(circle(x, y, 15) && px < 230 && px > 90 && py > 25 && py < 165){
+          pass += String(val);
+          tft.setTextColor(WHITE, BLACK);
+          tft.setTextSize(2);
+          tft.setCursor(130, 10);
+          tft.print(pass);
+          delay(150);
+        }
+      }
+    }
+    if(circle(160, 195, 15)){
+      pass += String(0);
+      tft.setTextColor(WHITE, BLACK);
+      tft.setTextSize(2);
+      tft.setCursor(130, 10);
+      tft.print(pass);
+      delay(150);
+    }
+    if(pass == passcode){
+      tft.setCursor(82, 220);
+      tft.setTextSize(2);
+      tft.setTextColor(WHITE);
+      tft.print("Access Accepted");
+      delay(1000);
+      cleardisplay();
+      logged = false;
 
+    }else{
+      if(pass.length() == 6){
+        tft.setCursor(85, 220);
+        tft.setTextSize(2);
+        tft.setTextColor(WHITE);
+        tft.print("Access Denied");
+        delay(1000);
+        pass = String();
+        cleardisplay();
+        password();
+      }
+    }
+}
+void pad(){
+  if(done){
+    drawUI();
+    done = false;
+  }
+  draw();
+}
 

@@ -1,2 +1,2 @@
-# Gamepad
-It reads the temperature, and it also has other apps like pong and other games. It uses a joystick to control it. It uses arduino and a nano to control it.
+# Drawpad
+It uses arduino, can be locked with your custom pass, and stores your precious drawings. :)
